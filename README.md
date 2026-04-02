@@ -8,6 +8,7 @@
 
 ## Table of Contents
 
+- [Story](#story)
 - [Overview](#overview)
 - [Game Phases](#game-phases)
   - [Phase 1: The Seed — Cellular/Neural Scale](#phase-1-the-seed--cellularneural-scale)
@@ -15,8 +16,19 @@
   - [Phase 3: The Nexus — Universal/Collective Scale](#phase-3-the-nexus--universalcollective-scale)
 - [Art Direction](#art-direction)
 - [Tech Stack](#tech-stack)
+- [Development Roadmap](#development-roadmap)
 - [Getting Started](#getting-started)
 - [Contributing](#contributing)
+
+---
+
+## Story
+
+You wake inside a single thought. You don't know whose thought it is — maybe yours, maybe something larger. A quiet voice (the **Echo**) speaks in fragments, posing questions it cannot answer alone: *"What am I made of? Where do I end and you begin?"*
+
+As you build neural pathways, navigate the labyrinths of a mind, and step into the space between minds, the Echo's questions grow clearer — and so does the unsettling possibility that you are not the thinker. You are the thought.
+
+The story unfolds without cutscenes or dialogue trees. The Echo's voice appears as ambient text woven into the geometry itself — phrases etched into fractal edges, questions that rearrange when you zoom in. The narrative *is* the environment.
 
 ---
 
@@ -26,7 +38,7 @@ The Echoing Mind illustrates the theory that consciousness is not a single, loca
 
 Players progress through three phases, each representing a different scale of consciousness. The core mechanic at every level is **recursion**: patterns repeat at different scales, and the player must recognize, manipulate, and ultimately unify them.
 
-**Genre:** Puzzle / Exploration Hybrid
+**Genre:** Puzzle / Narrative Exploration
 
 ---
 
@@ -44,11 +56,19 @@ Players progress through three phases, each representing a different scale of co
 
 ### Phase 2: The Labyrinth — Individual Mind Scale
 
-**Goal:** Navigate the Mindscape (a 2D map) by solving recursive image puzzles.
+**Goal:** Navigate the Mindscape (a 2D map) by solving recursive image puzzles and escaping self-referential loops.
 
-**Mechanic:** The player is presented with a scene and must zoom into specific elements to reveal the same image structure at a smaller scale (the [Droste effect](https://en.wikipedia.org/wiki/Droste_effect)). Within the infinite recursion, a single anomaly — a color shift, a unique shape — breaks the pattern. Finding and fixing it triggers a collapse-and-reform sequence representing a moment of insight.
+**Mechanics:** This phase uses several interlocking puzzle types to sustain variety:
 
-**Thematic Insight:** The mind contains models of the world, and within those models, models of itself. True insight requires breaking the infinite loop of self-reference.
+- **Droste Dive** — The player is presented with a scene and zooms into specific elements to reveal the same image structure at a smaller scale (the [Droste effect](https://en.wikipedia.org/wiki/Droste_effect)). Hidden within the recursion is a single anomaly — a color shift, a misplaced shape — that breaks the pattern. Finding and fixing it triggers a collapse-and-reform sequence.
+
+- **Echo Loops** — Rooms that repeat infinitely. The player must perform actions in a specific *sequence* across iterations to break the cycle. Each loop iteration subtly changes (a door shifts position, a symbol rotates), and the player must notice what's different and act on it before the loop resets.
+
+- **Mirror Puzzles** — Two mirrored halves of a scene that are *almost* identical. The player manipulates one side, and changes propagate to the other with a fractal transformation applied. The goal is to make both sides converge on a target pattern — but the transformation rules shift as you progress.
+
+- **Memory Residue** — Fragments of solved puzzles from earlier rooms reappear as environmental elements. The player must recognize which fragments are real (interactive) and which are echoes (decorative). Interacting with an echo resets progress; recognizing the real element unlocks the path forward.
+
+**Thematic Insight:** The mind contains models of the world, and within those models, models of itself. True insight requires breaking the infinite loop of self-reference — and learning to distinguish memory from reality.
 
 ---
 
@@ -56,9 +76,17 @@ Players progress through three phases, each representing a different scale of co
 
 **Goal:** Integrate the patterns from Phase 1 and the insights from Phase 2 into a single, cohesive Universal Pattern.
 
-**Mechanic:** A large Mandelbrot-like visual field serves as the canvas. The fractal networks built in Phase 1 and the solved images from Phase 2 become texture maps and miniature elements within this larger landscape. The player rotates and places these elements so their boundary lines align with the self-similar geometry of the main fractal.
+**Mechanics:** The player enters a vast, zoomable Mandelbrot-like fractal field — the Nexus. The gameplay loop works in three stages:
 
-**Thematic Insight:** Individual and local patterns are merely self-similar components of a much larger, singular cosmic structure. Alignment reveals unity.
+1. **Seeding** — The neural networks you built in Phase 1 and the solved puzzle fragments from Phase 2 appear as floating elements at the edges of the field. Each carries a unique fractal signature (boundary geometry, color frequency, rotation rate).
+
+2. **Placement** — You drag elements into the Nexus and rotate/scale them to find where their edges align with the surrounding fractal geometry. When an element is close to its correct position, the field responds — colors intensify, geometry sharpens, and the ambient sound shifts in pitch. Misalignment causes visual static and dissonance.
+
+3. **Resonance** — When enough elements are correctly placed in a region, they "lock in" and the fractal field *grows* — new geometry emerges from the alignment, expanding the explorable area and revealing deeper recursive layers. The Echo's voice becomes clearer in these regions, and its fragmented questions begin to form coherent statements.
+
+**Completion:** The game ends when the entire Nexus resonates as one unified pattern. The final image is unique to each player — shaped by which networks they built and which puzzles they solved — but always self-similar at every scale.
+
+**Thematic Insight:** Individual and local patterns are merely self-similar components of a much larger, singular cosmic structure. Alignment reveals unity — and the Echo finally answers its own question.
 
 ---
 
@@ -83,6 +111,42 @@ All visuals are **procedurally generated** from mathematical functions, ensuring
 | **Fractal Generation** | L-systems, iteration formulas, shader-based rendering |
 | **Recursive Visuals** | Droste effect shaders, Möbius transformations |
 | **Language** | GDScript (Godot) or C# (Unity) |
+
+---
+
+## Development Roadmap
+
+A phased approach to keep scope manageable and validate the fun factor early.
+
+### Milestone 1: Core Prototype
+- [ ] Set up Godot project with basic scene management
+- [ ] Implement Phase 1 node-connection mechanic with Sierpinski grouping
+- [ ] Basic procedural fractal rendering (static, 2D)
+- [ ] Playtest: *Is the node-placement puzzle satisfying?*
+
+### Milestone 2: Recursion Engine
+- [ ] Build the Droste effect zoom shader for Phase 2
+- [ ] Implement one complete Droste Dive puzzle (anomaly detection + collapse sequence)
+- [ ] Add Echo Loop mechanic (repeating rooms with subtle variation)
+- [ ] Playtest: *Do the recursive puzzles feel novel or repetitive?*
+
+### Milestone 3: Narrative Layer
+- [ ] Integrate the Echo's ambient text system (text embedded in geometry)
+- [ ] Write narrative fragments for all three phases
+- [ ] Add audio/sound design hooks for resonance feedback
+- [ ] Playtest: *Does the story land? Do players care about the Echo?*
+
+### Milestone 4: The Nexus
+- [ ] Build the zoomable Mandelbrot field
+- [ ] Implement the seed/place/resonate loop for Phase 3
+- [ ] Connect Phase 1 and Phase 2 outputs as Nexus elements
+- [ ] Playtest: *Does the final integration feel like a payoff?*
+
+### Milestone 5: Polish & Release
+- [ ] Difficulty tuning and puzzle balancing across all phases
+- [ ] Full procedural art pass (color palette, visual effects, transitions)
+- [ ] Sound design and ambient music
+- [ ] Performance optimization for fractal rendering
 
 ---
 
