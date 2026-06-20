@@ -8,6 +8,7 @@
 
 ## Table of Contents
 
+- [Play the Prototype](#play-the-prototype)
 - [Story](#story)
 - [Overview](#overview)
 - [Game Phases](#game-phases)
@@ -19,6 +20,18 @@
 - [Development Roadmap](#development-roadmap)
 - [Getting Started](#getting-started)
 - [Contributing](#contributing)
+
+---
+
+## Play the Prototype
+
+**[Launch Phase 1: The Seed](index.html)** — A browser-based prototype of the node-connection mechanic. No install required.
+
+- Click to place neural nodes
+- Drag between nodes to connect them
+- Form triangles to create meta-nodes (Sierpinski grouping)
+- Reach the group target to advance levels
+- The Echo speaks as you build...
 
 ---
 

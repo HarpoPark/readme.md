@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Echoing Mind — Phase 1: The Seed</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a1a;
+    color: #c8b8e8;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #header {
+    text-align: center;
+    padding: 12px 20px;
+    background: linear-gradient(180deg, #0f0f2a 0%, transparent 100%);
+    z-index: 10;
+    position: relative;
+  }
+
+  #header h1 {
+    font-size: 1.4em;
+    color: #d4a8ff;
+    letter-spacing: 2px;
+    font-weight: 300;
+  }
+
+  #header .subtitle {
+    font-size: 0.8em;
+    color: #7a6a9a;
+    margin-top: 2px;
+  }
+
+  #game-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+  }
+
+  canvas {
+    flex: 1;
+    display: block;
+    cursor: crosshair;
+  }
+
+  #hud {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    font-size: 0.85em;
+    pointer-events: none;
+  }
+
+  #hud div {
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+
+  #hud .label { color: #7a6a9a; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; }
+  #hud .value { color: #d4a8ff; font-size: 1.1em; }
+
+  #echo-text {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    font-style: italic;
+    color: #6a5a8a;
+    font-size: 0.95em;
+    pointer-events: none;
+    transition: opacity 1.5s ease;
+    max-width: 600px;
+    text-shadow: 0 0 20px rgba(106, 90, 138, 0.4);
+  }
+
+  #instructions {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 0.75em;
+    color: #5a4a7a;
+    text-align: right;
+    pointer-events: none;
+    line-height: 1.6;
+  }
+
+  #level-complete {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 20;
+  }
+
+  #level-complete h2 {
+    font-size: 2em;
+    color: #d4a8ff;
+    font-weight: 300;
+    letter-spacing: 3px;
+    text-shadow: 0 0 40px rgba(212, 168, 255, 0.6);
+  }
+
+  #level-complete p {
+    color: #8a7aaa;
+    margin-top: 12px;
+    font-style: italic;
+  }
+
+  #level-complete button {
+    margin-top: 24px;
+    padding: 10px 32px;
+    background: transparent;
+    border: 1px solid #5a4a7a;
+    color: #d4a8ff;
+    font-size: 1em;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+  }
+
+  #level-complete button:hover {
+    background: rgba(212, 168, 255, 0.1);
+    border-color: #d4a8ff;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>THE ECHOING MIND</h1>
+  <div class="subtitle">Phase 1: The Seed</div>
+</div>
+
+<div id="game-container">
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <div>
+      <span class="label">Nodes</span><br>
+      <span class="value" id="node-count">0</span>
+    </div>
+    <div>
+      <span class="label">Groups</span><br>
+      <span class="value" id="group-count">0</span>
+    </div>
+    <div>
+      <span class="label">Level</span><br>
+      <span class="value" id="level-display">1</span>
+    </div>
+  </div>
+
+  <div id="instructions">
+    Click to place nodes<br>
+    Drag to connect them<br>
+    Form triangles to group<br>
+    Groups become meta-nodes
+  </div>
+
+  <div id="echo-text"></div>
+
+  <div id="level-complete">
+    <h2>RESONANCE ACHIEVED</h2>
+    <p id="complete-message"></p>
+    <button id="next-level-btn">Continue Deeper</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const echoEl = document.getElementById('echo-text');
+const nodeCountEl = document.getElementById('node-count');
+const groupCountEl = document.getElementById('group-count');
+const levelDisplayEl = document.getElementById('level-display');
+const levelCompleteEl = document.getElementById('level-complete');
+const completeMessageEl = document.getElementById('complete-message');
+const nextLevelBtn = document.getElementById('next-level-btn');
+
+let W, H;
+function resize() {
+  const container = document.getElementById('game-container');
+  W = canvas.width = container.clientWidth;
+  H = canvas.height = container.clientHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const ECHO_MESSAGES = [
+  "What am I made of?",
+  "A single spark... or a constellation?",
+  "The pattern repeats. Do you see it?",
+  "Where do I end and you begin?",
+  "Three become one. One becomes three.",
+  "Each connection is a question answered.",
+  "The small contains the large.",
+  "You are building something that builds itself.",
+  "Is this memory... or prophecy?",
+  "Listen to the geometry.",
+  "Order emerges. Were you expecting chaos?",
+  "The network remembers what you forget.",
+  "Every node is a mirror.",
+  "What shape does a thought make?",
+  "You are not the thinker. You are the thought.",
+];
+
+const LEVEL_MESSAGES = [
+  "The first pattern forms. Simple rules, complex beauty.",
+  "Deeper now. The nodes remember their ancestors.",
+  "The recursion grows. Can you feel the echo?",
+  "Patterns within patterns. Where does it end?",
+  "The seed is becoming a forest.",
+];
+
+const COLORS = {
+  bg: '#0a0a1a',
+  node: '#a080d0',
+  nodeGlow: 'rgba(160, 128, 208, 0.3)',
+  nodeHover: '#d4a8ff',
+  connection: 'rgba(120, 100, 180, 0.5)',
+  connectionActive: 'rgba(180, 140, 255, 0.8)',
+  triangle: 'rgba(100, 70, 160, 0.15)',
+  triangleEdge: 'rgba(180, 140, 255, 0.4)',
+  metaNode: '#c8a040',
+  metaGlow: 'rgba(200, 160, 64, 0.3)',
+  metaConnection: 'rgba(200, 160, 64, 0.4)',
+  grid: 'rgba(60, 50, 90, 0.08)',
+  particle: 'rgba(180, 140, 255, 0.6)',
+};
+
+let nodes = [];
+let connections = [];
+let triangles = [];
+let metaNodes = [];
+let metaConnections = [];
+let particles = [];
+let backgroundStars = [];
+
+let dragging = false;
+let dragStart = null;
+let dragEnd = null;
+let hoveredNode = null;
+let time = 0;
+let currentLevel = 1;
+let groupsFormed = 0;
+let groupsNeeded = 3;
+let levelComplete = false;
+let echoTimer = 0;
+let echoIndex = 0;
+let pulseEffects = [];
+
+const NODE_RADIUS = 8;
+const META_RADIUS = 14;
+const SNAP_DIST = 20;
+const MIN_NODE_DIST = 50;
+
+function initStars() {
+  backgroundStars = [];
+  for (let i = 0; i < 120; i++) {
+    backgroundStars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.5 + 0.3,
+      phase: Math.random() * Math.PI * 2,
+      speed: Math.random() * 0.5 + 0.2,
+    });
+  }
+}
+initStars();
+
+function dist(a, b) {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+function midpoint(a, b) {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+function centroid(a, b, c) {
+  return { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 };
+}
+
+function findNodeAt(x, y, list, radius) {
+  for (let n of list) {
+    if (dist(n, { x, y }) < radius + SNAP_DIST) return n;
+  }
+  return null;
+}
+
+function hasConnection(a, b) {
+  return connections.some(c =>
+    (c.a === a && c.b === b) || (c.a === b && c.b === a)
+  );
+}
+
+function hasMetaConnection(a, b) {
+  return metaConnections.some(c =>
+    (c.a === a && c.b === b) || (c.a === b && c.b === a)
+  );
+}
+
+function getConnectedNodes(node) {
+  let result = [];
+  for (let c of connections) {
+    if (c.a === node) result.push(c.b);
+    else if (c.b === node) result.push(c.a);
+  }
+  return result;
+}
+
+function findTriangles() {
+  let newTriangles = [];
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      for (let k = j + 1; k < nodes.length; k++) {
+        const a = nodes[i], b = nodes[j], c = nodes[k];
+        if (a.grouped || b.grouped || c.grouped) continue;
+        if (hasConnection(a, b) && hasConnection(b, c) && hasConnection(a, c)) {
+          const alreadyFound = triangles.some(t =>
+            t.nodes.includes(a) && t.nodes.includes(b) && t.nodes.includes(c)
+          );
+          if (!alreadyFound) {
+            newTriangles.push({ nodes: [a, b, c], age: 0 });
+          }
+        }
+      }
+    }
+  }
+  return newTriangles;
+}
+
+function formMetaNode(triangle) {
+  const [a, b, c] = triangle.nodes;
+  const center = centroid(a, b, c);
+
+  a.grouped = true;
+  b.grouped = true;
+  c.grouped = true;
+
+  const meta = {
+    x: center.x,
+    y: center.y,
+    sourceNodes: [a, b, c],
+    pulse: 0,
+    scale: 0,
+    id: metaNodes.length,
+  };
+  metaNodes.push(meta);
+  groupsFormed++;
+
+  for (let i = 0; i < 12; i++) {
+    const angle = (Math.PI * 2 * i) / 12;
+    const speed = Math.random() * 2 + 1;
+    particles.push({
+      x: center.x,
+      y: center.y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: Math.random() * 0.015 + 0.008,
+      color: Math.random() > 0.5 ? COLORS.metaNode : COLORS.node,
+    });
+  }
+
+  pulseEffects.push({ x: center.x, y: center.y, radius: 0, alpha: 0.6 });
+
+  for (let existing of metaNodes) {
+    if (existing === meta) continue;
+    for (let sn of existing.sourceNodes) {
+      for (let tn of meta.sourceNodes) {
+        if (hasConnection(sn, tn) || dist(sn, tn) < MIN_NODE_DIST * 2) {
+          if (!hasMetaConnection(existing, meta)) {
+            metaConnections.push({ a: existing, b: meta, age: 0 });
+          }
+        }
+      }
+    }
+  }
+
+  if (groupsFormed >= groupsNeeded && !levelComplete) {
+    levelComplete = true;
+    setTimeout(showLevelComplete, 800);
+  }
+
+  updateHUD();
+}
+
+function showLevelComplete() {
+  completeMessageEl.textContent = LEVEL_MESSAGES[Math.min(currentLevel - 1, LEVEL_MESSAGES.length - 1)];
+  levelCompleteEl.style.display = 'block';
+  levelCompleteEl.style.opacity = '0';
+  let fade = 0;
+  const fadeIn = setInterval(() => {
+    fade += 0.03;
+    levelCompleteEl.style.opacity = Math.min(fade, 1);
+    if (fade >= 1) clearInterval(fadeIn);
+  }, 16);
+}
+
+function nextLevel() {
+  currentLevel++;
+  groupsNeeded = 3 + currentLevel;
+  groupsFormed = 0;
+  levelComplete = false;
+
+  nodes = [];
+  connections = [];
+  triangles = [];
+  metaNodes = [];
+  metaConnections = [];
+  particles = [];
+  pulseEffects = [];
+
+  levelCompleteEl.style.display = 'none';
+  initStars();
+  updateHUD();
+  showEcho(ECHO_MESSAGES[Math.floor(Math.random() * ECHO_MESSAGES.length)]);
+}
+
+nextLevelBtn.addEventListener('click', nextLevel);
+
+function updateHUD() {
+  nodeCountEl.textContent = nodes.filter(n => !n.grouped).length;
+  groupCountEl.textContent = groupsFormed + ' / ' + groupsNeeded;
+  levelDisplayEl.textContent = currentLevel;
+}
+
+function showEcho(msg) {
+  echoEl.style.opacity = '0';
+  setTimeout(() => {
+    echoEl.textContent = '"' + msg + '"';
+    echoEl.style.opacity = '1';
+  }, 500);
+  setTimeout(() => {
+    echoEl.style.opacity = '0';
+  }, 5000);
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  if (levelComplete) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const clickedNode = findNodeAt(mx, my, nodes.filter(n => !n.grouped), NODE_RADIUS);
+
+  if (clickedNode) {
+    dragging = true;
+    dragStart = clickedNode;
+    dragEnd = { x: mx, y: my };
+  } else {
+    const tooClose = nodes.some(n => !n.grouped && dist(n, { x: mx, y: my }) < MIN_NODE_DIST);
+    if (!tooClose) {
+      const node = { x: mx, y: my, grouped: false, age: 0 };
+      nodes.push(node);
+      updateHUD();
+
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI * 2 * i) / 6;
+        particles.push({
+          x: mx, y: my,
+          vx: Math.cos(angle) * 1.5,
+          vy: Math.sin(angle) * 1.5,
+          life: 1,
+          decay: 0.02,
+          color: COLORS.node,
+        });
+      }
+
+      echoTimer++;
+      if (echoTimer % 4 === 0) {
+        showEcho(ECHO_MESSAGES[echoIndex % ECHO_MESSAGES.length]);
+        echoIndex++;
+      }
+    }
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  hoveredNode = findNodeAt(mx, my, nodes.filter(n => !n.grouped), NODE_RADIUS);
+
+  if (dragging) {
+    dragEnd = { x: mx, y: my };
+    const snapTarget = findNodeAt(mx, my, nodes.filter(n => !n.grouped && n !== dragStart), NODE_RADIUS);
+    if (snapTarget) dragEnd = snapTarget;
+  }
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (dragging && dragStart) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    const target = findNodeAt(mx, my, nodes.filter(n => !n.grouped && n !== dragStart), NODE_RADIUS);
+
+    if (target && !hasConnection(dragStart, target)) {
+      connections.push({ a: dragStart, b: target, age: 0 });
+
+      const newTriangles = findTriangles();
+      for (let t of newTriangles) {
+        triangles.push(t);
+        setTimeout(() => formMetaNode(t), 400);
+      }
+    }
+  }
+
+  dragging = false;
+  dragStart = null;
+  dragEnd = null;
+});
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  canvas.dispatchEvent(new MouseEvent('mousedown', {
+    clientX: touch.clientX, clientY: touch.clientY
+  }));
+});
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  canvas.dispatchEvent(new MouseEvent('mousemove', {
+    clientX: touch.clientX, clientY: touch.clientY
+  }));
+});
+
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const touch = e.changedTouches[0];
+  canvas.dispatchEvent(new MouseEvent('mouseup', {
+    clientX: touch.clientX, clientY: touch.clientY
+  }));
+});
+
+function drawSierpinskiGhost(cx, cy, size, depth, alpha) {
+  if (depth <= 0 || alpha < 0.01) return;
+  ctx.beginPath();
+  const h = size * Math.sqrt(3) / 2;
+  ctx.moveTo(cx, cy - h * 0.66);
+  ctx.lineTo(cx - size / 2, cy + h * 0.33);
+  ctx.lineTo(cx + size / 2, cy + h * 0.33);
+  ctx.closePath();
+  ctx.strokeStyle = `rgba(100, 80, 150, ${alpha})`;
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  const nextSize = size / 2;
+  const nextH = nextSize * Math.sqrt(3) / 2;
+  drawSierpinskiGhost(cx, cy - h * 0.33 + nextH * 0.33, nextSize, depth - 1, alpha * 0.6);
+  drawSierpinskiGhost(cx - nextSize / 2, cy + h * 0.33 - nextH * 0.66, nextSize, depth - 1, alpha * 0.6);
+  drawSierpinskiGhost(cx + nextSize / 2, cy + h * 0.33 - nextH * 0.66, nextSize, depth - 1, alpha * 0.6);
+}
+
+function draw() {
+  time += 0.016;
+
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  for (let s of backgroundStars) {
+    const flicker = 0.5 + 0.5 * Math.sin(time * s.speed + s.phase);
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180, 160, 220, ${flicker * 0.4})`;
+    ctx.fill();
+  }
+
+  const ghostAlpha = 0.12 + 0.04 * Math.sin(time * 0.3);
+  drawSierpinskiGhost(W / 2, H / 2, Math.min(W, H) * 0.6, 4 + Math.min(currentLevel, 3), ghostAlpha);
+
+  for (let t of triangles) {
+    t.age += 0.016;
+    const alpha = Math.min(t.age * 2, 1);
+    const [a, b, c] = t.nodes;
+
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.closePath();
+
+    const pulse = 0.15 + 0.05 * Math.sin(time * 3 + t.age);
+    ctx.fillStyle = `rgba(100, 70, 160, ${pulse * alpha})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(180, 140, 255, ${0.4 * alpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  for (let c of connections) {
+    c.age += 0.016;
+    const alpha = Math.min(c.age * 3, 1);
+    const pulse = 0.5 + 0.3 * Math.sin(time * 2 + c.age);
+
+    ctx.beginPath();
+    ctx.moveTo(c.a.x, c.a.y);
+    ctx.lineTo(c.b.x, c.b.y);
+    ctx.strokeStyle = `rgba(120, 100, 180, ${pulse * alpha})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const mp = midpoint(c.a, c.b);
+    const energy = 0.3 + 0.2 * Math.sin(time * 4 + c.age * 2);
+    ctx.beginPath();
+    ctx.arc(mp.x, mp.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180, 140, 255, ${energy * alpha})`;
+    ctx.fill();
+  }
+
+  for (let mc of metaConnections) {
+    mc.age += 0.016;
+    const alpha = Math.min(mc.age * 2, 1);
+    const pulse = 0.4 + 0.3 * Math.sin(time * 1.5 + mc.age);
+
+    ctx.beginPath();
+    ctx.moveTo(mc.a.x, mc.a.y);
+    ctx.lineTo(mc.b.x, mc.b.y);
+    ctx.strokeStyle = `rgba(200, 160, 64, ${pulse * alpha})`;
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  for (let n of nodes) {
+    if (n.grouped) continue;
+    n.age += 0.016;
+
+    const isHovered = n === hoveredNode;
+    const isDragSource = n === dragStart;
+    const baseRadius = NODE_RADIUS + Math.sin(time * 2 + n.x * 0.01) * 1.5;
+    const r = isHovered || isDragSource ? baseRadius + 4 : baseRadius;
+
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r + 10, 0, Math.PI * 2);
+    ctx.fillStyle = isHovered ? 'rgba(212, 168, 255, 0.15)' : COLORS.nodeGlow;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+    const gradient = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r);
+    gradient.addColorStop(0, isHovered ? '#e8c8ff' : '#c0a0e0');
+    gradient.addColorStop(1, isHovered ? '#d4a8ff' : '#8060b0');
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.strokeStyle = isHovered ? 'rgba(212, 168, 255, 0.8)' : 'rgba(160, 128, 208, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  for (let m of metaNodes) {
+    m.scale = Math.min(m.scale + 0.03, 1);
+    m.pulse += 0.016;
+
+    const scale = m.scale;
+    const r = META_RADIUS * scale;
+    const breathe = 1 + 0.08 * Math.sin(time * 1.5 + m.id);
+
+    ctx.beginPath();
+    ctx.arc(m.x, m.y, r * breathe + 15, 0, Math.PI * 2);
+    ctx.fillStyle = COLORS.metaGlow;
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(time * 0.3 + m.id);
+    ctx.scale(scale * breathe, scale * breathe);
+
+    ctx.beginPath();
+    const sides = 3;
+    for (let i = 0; i <= sides; i++) {
+      const angle = (Math.PI * 2 * i) / sides - Math.PI / 2;
+      const px = Math.cos(angle) * META_RADIUS;
+      const py = Math.sin(angle) * META_RADIUS;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+
+    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, META_RADIUS);
+    gradient.addColorStop(0, '#e8c868');
+    gradient.addColorStop(1, '#a08030');
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(232, 200, 104, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const innerSize = META_RADIUS * 0.45;
+    for (let sub = 0; sub < 3; sub++) {
+      const sa = (Math.PI * 2 * sub) / 3 - Math.PI / 2;
+      const sx = Math.cos(sa) * innerSize * 0.55;
+      const sy = Math.sin(sa) * innerSize * 0.55;
+      ctx.beginPath();
+      for (let i = 0; i <= 3; i++) {
+        const a2 = (Math.PI * 2 * i) / 3 - Math.PI / 2;
+        const px = sx + Math.cos(a2) * innerSize * 0.4;
+        const py = sy + Math.sin(a2) * innerSize * 0.4;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(255, 230, 140, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  if (dragging && dragStart && dragEnd) {
+    ctx.beginPath();
+    ctx.moveTo(dragStart.x, dragStart.y);
+    const tx = dragEnd.x || dragEnd.x;
+    const ty = dragEnd.y || dragEnd.y;
+    ctx.lineTo(tx, ty);
+    ctx.strokeStyle = COLORS.connectionActive;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  particles = particles.filter(p => p.life > 0);
+  for (let p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= 0.97;
+    p.vy *= 0.97;
+    p.life -= p.decay;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2 * p.life, 0, Math.PI * 2);
+    ctx.fillStyle = p.color.replace(')', `, ${p.life})`).replace('rgb', 'rgba').replace('rgbaa', 'rgba');
+
+    const alpha = p.life;
+    if (p.color === COLORS.metaNode) {
+      ctx.fillStyle = `rgba(200, 160, 64, ${alpha})`;
+    } else {
+      ctx.fillStyle = `rgba(160, 128, 208, ${alpha})`;
+    }
+    ctx.fill();
+  }
+
+  pulseEffects = pulseEffects.filter(p => p.alpha > 0.01);
+  for (let p of pulseEffects) {
+    p.radius += 3;
+    p.alpha *= 0.95;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(200, 160, 64, ${p.alpha})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  requestAnimationFrame(draw);
+}
+
+showEcho(ECHO_MESSAGES[0]);
+updateHUD();
+draw();
+</script>
+</body>
+</html>
